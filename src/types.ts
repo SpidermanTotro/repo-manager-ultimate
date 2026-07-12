@@ -23,3 +23,12 @@ export interface RepoInspection {
   workflowUpdatedAt?: string;
   message?: string;
 }
+
+export interface TreeComparison {
+  leftFiles: number;
+  rightFiles: number;
+  sharedPaths: number;
+  identicalFiles: number;
+  leftOnly: string[];
+  rightOnly: string[];
+}
