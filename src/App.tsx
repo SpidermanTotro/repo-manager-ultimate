@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { repositories } from "./data";
-import type { Health, RepoKind } from "./types";
+import { repositories as seededRepositories } from "./data";
+import { scanPublicRepositories } from "./github";
+import type { Health, RepoKind, Repository } from "./types";
+
+const OWNER = "SpidermanTotro";
 
 const kindLabels: Record<RepoKind | "all", string> = {
   all: "All repositories",
@@ -17,8 +20,30 @@ const healthLabels: Record<Health, string> = {
 };
 
 function App() {
+  const [repositories, setRepositories] = useState<Repository[]>(seededRepositories);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<RepoKind | "all">("all");
+  const [scanning, setScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState("Showing verified audit snapshot.");
+  const [scanError, setScanError] = useState(false);
+  const [lastScan, setLastScan] = useState<Date | null>(null);
+
+  const runScan = async () => {
+    setScanning(true);
+    setScanError(false);
+    setScanMessage("Reading public GitHub repository metadata…");
+    try {
+      const live = await scanPublicRepositories(OWNER);
+      setRepositories(live);
+      setLastScan(new Date());
+      setScanMessage(`Live scan complete: ${live.length} public repositories loaded.`);
+    } catch (error) {
+      setScanError(true);
+      setScanMessage(error instanceof Error ? error.message : "The GitHub scan failed.");
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -31,7 +56,7 @@ function App() {
         repo.language.toLowerCase().includes(needle);
       return matchesKind && matchesQuery;
     });
-  }, [kind, query]);
+  }, [kind, query, repositories]);
 
   const healthy = repositories.filter((repo) => repo.health === "healthy").length;
   const attention = repositories.length - healthy;
@@ -47,24 +72,36 @@ function App() {
             <span>Repository command centre</span>
           </div>
         </div>
-        <button className="scanButton" type="button">
-          <span aria-hidden="true">↻</span> Run health scan
+        <button className="scanButton" type="button" onClick={runScan} disabled={scanning}>
+          <span className={scanning ? "spin" : ""} aria-hidden="true">↻</span>
+          {scanning ? " Scanning…" : " Run live scan"}
         </button>
       </header>
 
       <main>
         <section className="hero">
-          <p className="eyebrow">ACCOUNT OVERVIEW</p>
+          <p className="eyebrow">ACCOUNT OVERVIEW · {OWNER}</p>
           <h1>Know what is healthy, what needs work, and what is safe to clean.</h1>
           <p className="heroCopy">
-            A local-first dashboard for repository health, CI visibility, duplicates,
+            A local-first dashboard for repository health, activity, duplicates,
             upstream tracking, and deliberate cleanup.
           </p>
+          <div className={`scanStatus ${scanError ? "error" : ""}`} role="status">
+            <span>{scanError ? "!" : "●"}</span>
+            <div>
+              <strong>{scanMessage}</strong>
+              <small>
+                {lastScan
+                  ? `Updated ${lastScan.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}`
+                  : "Run a live scan to replace the snapshot with current public data."}
+              </small>
+            </div>
+          </div>
         </section>
 
         <section className="stats" aria-label="Repository summary">
-          <article><span>Total tracked</span><strong>{repositories.length}</strong><small>across 4 categories</small></article>
-          <article><span>Healthy</span><strong className="green">{healthy}</strong><small>verified checks passing</small></article>
+          <article><span>Total tracked</span><strong>{repositories.length}</strong><small>public scan or audit snapshot</small></article>
+          <article><span>Healthy</span><strong className="green">{healthy}</strong><small>recent non-cleanup activity</small></article>
           <article><span>Needs attention</span><strong className="amber">{attention}</strong><small>review before action</small></article>
           <article><span>Cleanup queue</span><strong className="violet">{cleanup}</strong><small>never delete automatically</small></article>
         </section>
@@ -81,12 +118,8 @@ function App() {
             </label>
             <div className="filters" aria-label="Repository type">
               {(Object.keys(kindLabels) as Array<RepoKind | "all">).map((value) => (
-                <button
-                  type="button"
-                  className={kind === value ? "active" : ""}
-                  onClick={() => setKind(value)}
-                  key={value}
-                >
+                <button type="button" className={kind === value ? "active" : ""}
+                  onClick={() => setKind(value)} key={value}>
                   {kindLabels[value]}
                 </button>
               ))}
@@ -94,34 +127,28 @@ function App() {
           </div>
 
           <div className="tableHeader">
-            <div>
-              <h2>Repository health</h2>
-              <p>{filtered.length} result{filtered.length === 1 ? "" : "s"}</p>
-            </div>
-            <span className="safeBadge">Safe mode enabled</span>
+            <div><h2>Repository health</h2><p>{filtered.length} result{filtered.length === 1 ? "" : "s"}</p></div>
+            <span className="safeBadge">Read-only safe mode</span>
           </div>
 
           <div className="repoGrid">
             {filtered.map((repo) => (
               <article className="repoCard" key={repo.name}>
                 <div className="repoTop">
-                  <div>
-                    <span className={`healthDot ${repo.health}`} />
-                    <span className="kind">{kindLabels[repo.kind]}</span>
-                  </div>
+                  <div><span className={`healthDot ${repo.health}`} /><span className="kind">{kindLabels[repo.kind]}</span></div>
                   <span className={`healthPill ${repo.health}`}>{healthLabels[repo.health]}</span>
                 </div>
-                <h3>{repo.name}</h3>
+                <h3>
+                  {repo.htmlUrl ? <a href={repo.htmlUrl} target="_blank" rel="noreferrer">{repo.name}</a> : repo.name}
+                </h3>
                 <p>{repo.description}</p>
                 <dl>
                   <div><dt>Language</dt><dd>{repo.language}</dd></div>
                   <div><dt>Last activity</dt><dd>{repo.lastActivity}</dd></div>
-                  <div><dt>Checks</dt><dd>{repo.checks}</dd></div>
+                  <div><dt>Signal</dt><dd>{repo.checks}</dd></div>
+                  {repo.sizeKb !== undefined && <div><dt>Repository size</dt><dd>{repo.sizeKb.toLocaleString()} KB</dd></div>}
                 </dl>
-                <div className="recommendation">
-                  <span>Recommended</span>
-                  <strong>{repo.recommendation}</strong>
-                </div>
+                <div className="recommendation"><span>Recommended</span><strong>{repo.recommendation}</strong></div>
               </article>
             ))}
           </div>
@@ -141,7 +168,7 @@ function App() {
         </section>
       </main>
 
-      <footer>RepoForge 0.1 · Local-first · No destructive actions</footer>
+      <footer>RepoForge 0.2 · Public read-only GitHub scan · No destructive actions</footer>
     </div>
   );
 }
