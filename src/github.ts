@@ -154,3 +154,39 @@ export async function inspectRepository(owner: string, name: string): Promise<im
     }).format(new Date(latest.updated_at)),
   };
 }
+
+interface TreeItem { path: string; type: string; sha: string; }
+interface TreeResponse { tree: TreeItem[]; truncated: boolean; }
+interface RepoDetails { default_branch: string; }
+
+async function fetchTree(owner: string, name: string): Promise<Map<string, string>> {
+  const headers = { Accept: "application/vnd.github+json" };
+  const detailsResponse = await fetch(
+    `${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
+    { headers },
+  );
+  if (!detailsResponse.ok) throw new Error(`Cannot read ${name} metadata (HTTP ${detailsResponse.status}).`);
+  const details = (await detailsResponse.json()) as RepoDetails;
+  const treeResponse = await fetch(
+    `${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/git/trees/${encodeURIComponent(details.default_branch)}?recursive=1`,
+    { headers },
+  );
+  if (!treeResponse.ok) throw new Error(`Cannot read ${name} tree (HTTP ${treeResponse.status}).`);
+  const tree = (await treeResponse.json()) as TreeResponse;
+  if (tree.truncated) throw new Error(`${name} is too large for a complete public tree comparison.`);
+  return new Map(tree.tree.filter((item) => item.type === "blob").map((item) => [item.path, item.sha]));
+}
+
+export async function compareRepositories(owner: string, left: string, right: string): Promise<import("./types").TreeComparison> {
+  if (left === right) throw new Error("Choose two different repositories.");
+  const [leftTree, rightTree] = await Promise.all([fetchTree(owner, left), fetchTree(owner, right)]);
+  const shared = [...leftTree.keys()].filter((path) => rightTree.has(path));
+  return {
+    leftFiles: leftTree.size,
+    rightFiles: rightTree.size,
+    sharedPaths: shared.length,
+    identicalFiles: shared.filter((path) => leftTree.get(path) === rightTree.get(path)).length,
+    leftOnly: [...leftTree.keys()].filter((path) => !rightTree.has(path)).slice(0, 8),
+    rightOnly: [...rightTree.keys()].filter((path) => !leftTree.has(path)).slice(0, 8),
+  };
+}
