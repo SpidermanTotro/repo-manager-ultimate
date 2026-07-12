@@ -78,3 +78,16 @@ footer { text-align:center;color:#5d728e;padding:30px;font-size:12px; }
 .scanStatus small { color: #7790aa; margin-top: 3px; }
 .repoCard h3 a { color: inherit; text-decoration: none; }
 .repoCard h3 a:hover { color: #7da2ff; }
+
+.inspection { margin-top: 12px; padding-top: 12px; border-top: 1px solid #20334a; }
+.inspection > small { display: block; color: #7188a3; line-height: 1.45; margin-bottom: 8px; }
+.inspectionRow { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 7px; font-size: 12px; }
+.inspectionRow span { color: #7287a2; }
+.inspectionRow strong { color: #cbd8e8; text-align: right; }
+.workflow.success { color: #4ade80; }
+.workflow.failure { color: #fb7185; }
+.workflow.pending { color: #fbbf24; }
+.workflow.none, .workflow.unavailable { color: #94a3b8; }
+.inspection button { width: 100%; margin-top: 8px; padding: 9px; color: #a9c1ff; background: #0d2037; border: 1px solid #294666; border-radius: 9px; font-weight: 700; font-size: 12px; }
+.inspection button:hover { border-color: #4b72a3; background: #122a47; }
+.inspection button:disabled { opacity: .6; cursor: wait; }
