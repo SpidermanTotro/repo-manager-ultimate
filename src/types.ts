@@ -15,3 +15,11 @@ export interface Repository {
   stars?: number;
   sizeKb?: number;
 }
+
+export interface RepoInspection {
+  openPulls: number | null;
+  workflowName: string;
+  workflowState: "success" | "failure" | "pending" | "none" | "unavailable";
+  workflowUpdatedAt?: string;
+  message?: string;
+}
