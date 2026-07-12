@@ -11,4 +11,7 @@ export interface Repository {
   lastActivity: string;
   checks: string;
   recommendation: string;
+  htmlUrl?: string;
+  stars?: number;
+  sizeKb?: number;
 }
