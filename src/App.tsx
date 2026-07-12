@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { repositories as seededRepositories } from "./data";
-import { scanPublicRepositories } from "./github";
-import type { Health, RepoKind, Repository } from "./types";
+import { inspectRepository, scanPublicRepositories } from "./github";
+import type { Health, RepoInspection, RepoKind, Repository } from "./types";
 
 const OWNER = "SpidermanTotro";
 
@@ -27,6 +27,8 @@ function App() {
   const [scanMessage, setScanMessage] = useState("Showing verified audit snapshot.");
   const [scanError, setScanError] = useState(false);
   const [lastScan, setLastScan] = useState<Date | null>(null);
+  const [inspections, setInspections] = useState<Record<string, RepoInspection>>({});
+  const [inspecting, setInspecting] = useState<string | null>(null);
 
   const runScan = async () => {
     setScanning(true);
@@ -42,6 +44,26 @@ function App() {
       setScanMessage(error instanceof Error ? error.message : "The GitHub scan failed.");
     } finally {
       setScanning(false);
+    }
+  };
+
+  const inspect = async (name: string) => {
+    setInspecting(name);
+    try {
+      const result = await inspectRepository(OWNER, name);
+      setInspections((current) => ({ ...current, [name]: result }));
+    } catch (error) {
+      setInspections((current) => ({
+        ...current,
+        [name]: {
+          openPulls: null,
+          workflowName: "Inspection failed",
+          workflowState: "unavailable",
+          message: error instanceof Error ? error.message : "Unknown inspection error",
+        },
+      }));
+    } finally {
+      setInspecting(null);
     }
   };
 
@@ -149,6 +171,31 @@ function App() {
                   {repo.sizeKb !== undefined && <div><dt>Repository size</dt><dd>{repo.sizeKb.toLocaleString()} KB</dd></div>}
                 </dl>
                 <div className="recommendation"><span>Recommended</span><strong>{repo.recommendation}</strong></div>
+                <div className="inspection">
+                  {inspections[repo.name] ? (
+                    <>
+                      <div className="inspectionRow">
+                        <span>Open pull requests</span>
+                        <strong>{inspections[repo.name].openPulls ?? "Unavailable"}</strong>
+                      </div>
+                      <div className="inspectionRow">
+                        <span>Latest workflow</span>
+                        <strong className={`workflow ${inspections[repo.name].workflowState}`}>
+                          {inspections[repo.name].workflowName}
+                        </strong>
+                      </div>
+                      {inspections[repo.name].workflowUpdatedAt && (
+                        <small>Updated {inspections[repo.name].workflowUpdatedAt}</small>
+                      )}
+                      {inspections[repo.name].message && <small>{inspections[repo.name].message}</small>}
+                    </>
+                  ) : (
+                    <small>CI and pull-request details have not been inspected.</small>
+                  )}
+                  <button type="button" onClick={() => inspect(repo.name)} disabled={inspecting === repo.name}>
+                    {inspecting === repo.name ? "Inspecting…" : inspections[repo.name] ? "Refresh details" : "Inspect CI & PRs"}
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -168,7 +215,7 @@ function App() {
         </section>
       </main>
 
-      <footer>RepoForge 0.2 · Public read-only GitHub scan · No destructive actions</footer>
+      <footer>RepoForge 0.3 · CI and PR inspection · No destructive actions</footer>
     </div>
   );
 }
