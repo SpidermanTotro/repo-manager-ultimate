@@ -88,3 +88,69 @@ export async function scanPublicRepositories(owner: string): Promise<Repository[
   const payload = (await response.json()) as GitHubRepository[];
   return payload.map(mapRepository);
 }
+
+interface WorkflowRun {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  updated_at: string;
+}
+
+interface WorkflowResponse {
+  workflow_runs: WorkflowRun[];
+}
+
+export async function inspectRepository(owner: string, name: string): Promise<import("./types").RepoInspection> {
+  const headers = { Accept: "application/vnd.github+json" };
+  const [pullResponse, workflowResponse] = await Promise.all([
+    fetch(`${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls?state=open&per_page=30`, { headers }),
+    fetch(`${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/actions/runs?per_page=1`, { headers }),
+  ]);
+
+  if (pullResponse.status === 403 || workflowResponse.status === 403) {
+    return {
+      openPulls: null,
+      workflowName: "API limit reached",
+      workflowState: "unavailable",
+      message: "Wait for GitHub's public API limit to reset, then retry.",
+    };
+  }
+
+  const openPulls = pullResponse.ok
+    ? ((await pullResponse.json()) as unknown[]).length
+    : null;
+
+  if (workflowResponse.status === 404) {
+    return { openPulls, workflowName: "No Actions workflow", workflowState: "none" };
+  }
+
+  if (!workflowResponse.ok) {
+    return {
+      openPulls,
+      workflowName: `Workflow check unavailable (HTTP ${workflowResponse.status})`,
+      workflowState: "unavailable",
+    };
+  }
+
+  const workflows = (await workflowResponse.json()) as WorkflowResponse;
+  const latest = workflows.workflow_runs[0];
+  if (!latest) {
+    return { openPulls, workflowName: "No workflow runs found", workflowState: "none" };
+  }
+
+  const workflowState =
+    latest.status !== "completed"
+      ? "pending"
+      : latest.conclusion === "success"
+        ? "success"
+        : "failure";
+
+  return {
+    openPulls,
+    workflowName: latest.name,
+    workflowState,
+    workflowUpdatedAt: new Intl.DateTimeFormat("en-AU", {
+      day: "numeric", month: "short", year: "numeric",
+    }).format(new Date(latest.updated_at)),
+  };
+}
