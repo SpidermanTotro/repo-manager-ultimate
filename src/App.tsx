@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { repositories as seededRepositories } from "./data";
+import { CompareAndExport } from "./CompareAndExport";
 import { inspectRepository, scanPublicRepositories } from "./github";
 import type { Health, RepoInspection, RepoKind, Repository } from "./types";
 
@@ -128,6 +129,8 @@ function App() {
           <article><span>Cleanup queue</span><strong className="violet">{cleanup}</strong><small>never delete automatically</small></article>
         </section>
 
+        <CompareAndExport owner={OWNER} repositories={repositories} />
+
         <section className="workspace">
           <div className="controls">
             <label className="search">
@@ -215,7 +218,7 @@ function App() {
         </section>
       </main>
 
-      <footer>RepoForge 0.3 · CI and PR inspection · No destructive actions</footer>
+      <footer>RepoForge 0.4 · Compare and export · No destructive actions</footer>
     </div>
   );
 }
