@@ -2,7 +2,7 @@
 
 RepoForge is a local-first repository health and cleanup dashboard. It makes active projects, experiments, upstream mirrors, CI state, and cleanup candidates understandable without performing destructive actions.
 
-## Version 0.3
+## Version 0.4
 
 - Responsive repository health dashboard
 - Search and category filters
@@ -15,6 +15,8 @@ RepoForge is a local-first repository health and cleanup dashboard. It makes act
 - On-demand open pull-request counts
 - Latest GitHub Actions workflow status and date
 - Explicit no-workflow, unavailable, pending, success, and failure states
+- Read-only recursive tree comparison for duplicate review
+- Downloadable JSON cleanup-plan exports
 - Explicit non-destructive design
 
 ## Run locally
@@ -35,8 +37,6 @@ npm run build
 ## Planned next steps
 
 1. Optional read-only token support for higher API limits
-2. Duplicate-content comparison
-3. Exportable cleanup plans
-4. Optional Electron desktop wrapper
+2. Optional Electron desktop wrapper
 
 RepoForge never deletes or archives repositories automatically.
