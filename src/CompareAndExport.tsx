@@ -2,9 +2,9 @@ import { useState } from "react";
 import { compareRepositories } from "./github";
 import type { Repository, TreeComparison } from "./types";
 
-interface Props { owner: string; repositories: Repository[]; }
+interface Props { owner: string; repositories: Repository[]; token?: string; }
 
-export function CompareAndExport({ owner, repositories }: Props) {
+export function CompareAndExport({ owner, repositories, token }: Props) {
   const [left, setLeft] = useState(repositories[0]?.name ?? "");
   const [right, setRight] = useState(repositories[1]?.name ?? "");
   const [result, setResult] = useState<TreeComparison | null>(null);
@@ -13,7 +13,7 @@ export function CompareAndExport({ owner, repositories }: Props) {
 
   const compare = async () => {
     setBusy(true); setMessage(""); setResult(null);
-    try { setResult(await compareRepositories(owner, left, right)); }
+    try { setResult(await compareRepositories(owner, left, right, token)); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Comparison failed."); }
     finally { setBusy(false); }
   };
