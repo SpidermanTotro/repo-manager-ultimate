@@ -1,6 +1,13 @@
 import type { Health, RepoKind, Repository } from "./types";
 
 const API_ROOT = "https://api.github.com";
+
+function apiHeaders(token?: string): HeadersInit {
+  return {
+    Accept: "application/vnd.github+json",
+    ...(token?.trim() ? { Authorization: `Bearer ${token.trim()}` } : {}),
+  };
+}
 const ACTIVE_REPOS = new Set([
   "AgentFoundry-instantly",
   "azeroth-pilot-reloaded-Pro-",
@@ -73,10 +80,10 @@ function mapRepository(repo: GitHubRepository): Repository {
   };
 }
 
-export async function scanPublicRepositories(owner: string): Promise<Repository[]> {
+export async function scanPublicRepositories(owner: string, token?: string): Promise<Repository[]> {
   const response = await fetch(
     `${API_ROOT}/users/${encodeURIComponent(owner)}/repos?per_page=100&sort=pushed`,
-    { headers: { Accept: "application/vnd.github+json" } },
+    { headers: apiHeaders(token) },
   );
 
   if (!response.ok) {
@@ -100,8 +107,8 @@ interface WorkflowResponse {
   workflow_runs: WorkflowRun[];
 }
 
-export async function inspectRepository(owner: string, name: string): Promise<import("./types").RepoInspection> {
-  const headers = { Accept: "application/vnd.github+json" };
+export async function inspectRepository(owner: string, name: string, token?: string): Promise<import("./types").RepoInspection> {
+  const headers = apiHeaders(token);
   const [pullResponse, workflowResponse] = await Promise.all([
     fetch(`${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls?state=open&per_page=30`, { headers }),
     fetch(`${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/actions/runs?per_page=1`, { headers }),
@@ -159,8 +166,8 @@ interface TreeItem { path: string; type: string; sha: string; }
 interface TreeResponse { tree: TreeItem[]; truncated: boolean; }
 interface RepoDetails { default_branch: string; }
 
-async function fetchTree(owner: string, name: string): Promise<Map<string, string>> {
-  const headers = { Accept: "application/vnd.github+json" };
+async function fetchTree(owner: string, name: string, token?: string): Promise<Map<string, string>> {
+  const headers = apiHeaders(token);
   const detailsResponse = await fetch(
     `${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
     { headers },
@@ -177,9 +184,9 @@ async function fetchTree(owner: string, name: string): Promise<Map<string, strin
   return new Map(tree.tree.filter((item) => item.type === "blob").map((item) => [item.path, item.sha]));
 }
 
-export async function compareRepositories(owner: string, left: string, right: string): Promise<import("./types").TreeComparison> {
+export async function compareRepositories(owner: string, left: string, right: string, token?: string): Promise<import("./types").TreeComparison> {
   if (left === right) throw new Error("Choose two different repositories.");
-  const [leftTree, rightTree] = await Promise.all([fetchTree(owner, left), fetchTree(owner, right)]);
+  const [leftTree, rightTree] = await Promise.all([fetchTree(owner, left, token), fetchTree(owner, right, token)]);
   const shared = [...leftTree.keys()].filter((path) => rightTree.has(path));
   return {
     leftFiles: leftTree.size,
