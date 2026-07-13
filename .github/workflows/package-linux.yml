@@ -1,0 +1,32 @@
+name: Package Linux desktop
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build AppImage and Debian package
+        run: npm run package:linux
+      - name: Upload unsigned development packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: repoforge-linux-unsigned
+          path: |
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error
