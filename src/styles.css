@@ -106,3 +106,8 @@ footer { text-align:center;color:#5d728e;padding:30px;font-size:12px; }
 .compareResult p { grid-column:1/-1;color:#8da0b7;font-size:12px;margin:3px 0 0; }
 .compareError { color:#fda4af; }
 @media(max-width:760px){.compareControls{grid-template-columns:1fr}.compareControls>span{display:none}.compareResult{grid-template-columns:repeat(2,1fr)}.toolboxHead{align-items:flex-start;flex-direction:column}}
+
+.tokenPanel { display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:end;margin:28px 0;padding:20px;background:rgba(13,28,46,.8);border:1px solid #21334b;border-radius:16px; }
+.tokenPanel h2{margin:5px 0 8px}.tokenPanel p{color:#8496ad;line-height:1.5;margin:0}
+.tokenPanel label span,.tokenPanel label small{display:block;color:#8196af;font-size:11px}.tokenPanel input{width:100%;margin:7px 0;padding:11px;color:#e4edf9;background:#081522;border:1px solid #29415e;border-radius:9px}
+@media(max-width:760px){.tokenPanel{grid-template-columns:1fr}}
