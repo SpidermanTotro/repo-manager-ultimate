@@ -30,13 +30,14 @@ function App() {
   const [lastScan, setLastScan] = useState<Date | null>(null);
   const [inspections, setInspections] = useState<Record<string, RepoInspection>>({});
   const [inspecting, setInspecting] = useState<string | null>(null);
+  const [token, setToken] = useState("");
 
   const runScan = async () => {
     setScanning(true);
     setScanError(false);
     setScanMessage("Reading public GitHub repository metadata…");
     try {
-      const live = await scanPublicRepositories(OWNER);
+      const live = await scanPublicRepositories(OWNER, token);
       setRepositories(live);
       setLastScan(new Date());
       setScanMessage(`Live scan complete: ${live.length} public repositories loaded.`);
@@ -51,7 +52,7 @@ function App() {
   const inspect = async (name: string) => {
     setInspecting(name);
     try {
-      const result = await inspectRepository(OWNER, name);
+      const result = await inspectRepository(OWNER, name, token);
       setInspections((current) => ({ ...current, [name]: result }));
     } catch (error) {
       setInspections((current) => ({
@@ -122,6 +123,20 @@ function App() {
           </div>
         </section>
 
+        <section className="tokenPanel">
+          <div>
+            <p className="eyebrow">OPTIONAL API ACCESS</p>
+            <h2>Session-only read token</h2>
+            <p>Use a fine-grained GitHub token with read-only repository permissions for higher API limits. It stays in memory and is erased when this window closes.</p>
+          </div>
+          <label>
+            <span>Fine-grained token</span>
+            <input type="password" value={token} onChange={(event) => setToken(event.target.value)}
+              autoComplete="off" spellCheck={false} placeholder="github_pat_… (optional)" />
+            <small>{token ? "Token active for this session only." : "Public unauthenticated mode."}</small>
+          </label>
+        </section>
+
         <section className="stats" aria-label="Repository summary">
           <article><span>Total tracked</span><strong>{repositories.length}</strong><small>public scan or audit snapshot</small></article>
           <article><span>Healthy</span><strong className="green">{healthy}</strong><small>recent non-cleanup activity</small></article>
@@ -129,7 +144,7 @@ function App() {
           <article><span>Cleanup queue</span><strong className="violet">{cleanup}</strong><small>never delete automatically</small></article>
         </section>
 
-        <CompareAndExport owner={OWNER} repositories={repositories} />
+        <CompareAndExport owner={OWNER} repositories={repositories} token={token} />
 
         <section className="workspace">
           <div className="controls">

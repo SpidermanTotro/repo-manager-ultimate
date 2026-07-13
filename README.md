@@ -2,7 +2,7 @@
 
 RepoForge is a local-first repository health and cleanup dashboard. It makes active projects, experiments, upstream mirrors, CI state, and cleanup candidates understandable without performing destructive actions.
 
-## Version 0.6
+## Version 0.7
 
 - Responsive repository health dashboard
 - Search and category filters
@@ -22,6 +22,9 @@ RepoForge is a local-first repository health and cleanup dashboard. It makes act
 - External navigation restricted to GitHub links
 - AppImage and Debian package generation
 - Manual GitHub Actions packaging with downloadable artifacts
+- Optional fine-grained read-only GitHub token
+- Token retained only in memory for the active window
+- No token persistence, export, logging, or build embedding
 - Explicit non-destructive design
 
 ## Run locally
@@ -63,7 +66,10 @@ npm run build
 
 ## Planned next steps
 
-1. Optional read-only token support for higher API limits
-2. Installer signing through protected GitHub Secrets
+1. Installer signing through protected GitHub Secrets
 
 RepoForge never deletes or archives repositories automatically.
+
+## Optional higher API limits
+
+Paste a fine-grained GitHub token into the session-only field. Grant only read access to repository metadata, pull requests, and Actions. RepoForge does not persist the token; closing or refreshing the window clears it. Never commit tokens to the repository or place them in Vite environment variables.
