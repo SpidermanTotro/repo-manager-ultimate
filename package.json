@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview",
     "desktop": "npm run build && electron .",
     "desktop:dev": "electron .",
@@ -19,38 +21,27 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "electron": "^39.2.5",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "jsdom": "^26.1.0",
+    "vitest": "^3.2.4"
   },
   "main": "electron/main.cjs",
   "build": {
     "appId": "dev.repoforge.dashboard",
     "productName": "RepoForge Dashboard",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "package.json"
-    ],
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "linux": {
       "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
-        }
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
       ],
       "category": "Development",
       "synopsis": "Repository health and cleanup dashboard",
