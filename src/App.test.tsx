@@ -15,7 +15,7 @@ vi.mock("./CompareAndExport", () => ({
 
 describe("session-only token UI", () => {
   beforeEach(() => {
-    vi.mocked(scanPublicRepositories).mockClear();
+    vi.mocked(scanPublicRepositories).mockReset().mockResolvedValue([]);
   });
 
   it("starts in public unauthenticated mode and scans without a token", async () => {
@@ -28,6 +28,7 @@ describe("session-only token UI", () => {
     await user.click(screen.getByRole("button", { name: /run live scan/i }));
 
     expect(scanPublicRepositories).toHaveBeenCalledWith("SpidermanTotro", "");
+    expect(await screen.findByText("Live scan complete: 0 public repositories loaded.")).toBeInTheDocument();
   });
 
   it("keeps the token only in component memory and forgets it on remount", async () => {
@@ -47,6 +48,7 @@ describe("session-only token UI", () => {
       "SpidermanTotro",
       "github_pat_session_secret",
     );
+    expect(await screen.findByText("Live scan complete: 0 public repositories loaded.")).toBeInTheDocument();
     expect(localWrite).not.toHaveBeenCalled();
     expect(localRemove).not.toHaveBeenCalled();
 

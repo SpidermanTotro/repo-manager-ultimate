@@ -29,8 +29,16 @@ describe("cleanup-plan export safety", () => {
       }
     }
     vi.stubGlobal("Blob", CapturingBlob);
-    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
-    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    Object.defineProperties(URL, {
+      createObjectURL: {
+        configurable: true,
+        value: vi.fn(() => "blob:test"),
+      },
+      revokeObjectURL: {
+        configurable: true,
+        value: vi.fn(),
+      },
+    });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 
     render(
