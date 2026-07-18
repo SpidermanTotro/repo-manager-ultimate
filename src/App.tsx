@@ -131,7 +131,7 @@ function App() {
           </div>
           <label>
             <span>Fine-grained token</span>
-            <input type="password" value={token} onChange={(event) => setToken(event.target.value)}
+            <input aria-label="Fine-grained token" type="password" value={token} onChange={(event) => setToken(event.target.value)}
               autoComplete="off" spellCheck={false} placeholder="github_pat_… (optional)" />
             <small>{token ? "Token active for this session only." : "Public unauthenticated mode."}</small>
           </label>
